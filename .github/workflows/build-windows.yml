@@ -55,31 +55,15 @@ jobs:
             ${{ matrix.pkg_prefix }}-ffmpeg
             ${{ matrix.pkg_prefix }}-libplacebo
             ${{ matrix.pkg_prefix }}-libass
-            ${{ matrix.pkg_prefix }}-luajit
             ${{ matrix.pkg_prefix }}-vulkan-headers
             ${{ matrix.pkg_prefix }}-vulkan-loader
             ${{ matrix.pkg_prefix }}-shaderc
             ${{ matrix.pkg_prefix }}-spirv-cross
             ${{ matrix.pkg_prefix }}-llvm
-              
-      - name: Install LuaJIT into build MSYS2
-        shell: pwsh
-        run: |
-          Write-Host "Installing LuaJIT into C:\msys64..."
-          C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm --needed ${{ matrix.pkg_prefix }}-luajit"
-
-          Write-Host "Checking LuaJIT files..."
-          Get-ChildItem "C:\msys64\${{ matrix.msystem }}\lib\pkgconfig" -Filter "*lua*" -ErrorAction Stop
-
-          Write-Host "Checking LuaJIT through MSYS2 shell..."
-          C:\msys64\usr\bin\bash.exe -lc "export PATH=/${{ matrix.msystem }}/bin:/usr/bin:\$PATH; export PKG_CONFIG_PATH=/${{ matrix.msystem }}/lib/pkgconfig; pkg-config --modversion luajit"
 
       - name: Build mpv from source
         shell: pwsh
-        env:
-          PKG_CONFIG_PATH: C:/msys64/${{ matrix.msystem }}/lib/pkgconfig
         run: |
-          Write-Host "PKG_CONFIG_PATH=$env:PKG_CONFIG_PATH"
           dev\windows\build_mpv_source.ps1 -Arch ${{ matrix.arch }} -Force
 
       - name: Build and package
