@@ -63,27 +63,21 @@ jobs:
             ${{ matrix.pkg_prefix }}-llvm
       
       - name: Verify LuaJIT
-        shell: pwsh
-        env:
-          PKG_CONFIG_PATH: C:\msys64\${{ matrix.msystem }}\lib\pkgconfig;C:\msys64\${{ matrix.msystem }}\share\pkgconfig
-          PATH: C:\msys64\${{ matrix.msystem }}\bin;${{ env.PATH }}
+        shell: msys2 {0}
         run: |
-          Write-Host "=== LuaJIT files ==="
-          Get-ChildItem "C:\msys64\${{ matrix.msystem }}\lib\pkgconfig" | Where-Object { $_.Name -match "lua" }
+          echo "=== MSYSTEM ==="
+          echo "$MSYSTEM"
 
-          Write-Host "=== pkg-config version ==="
-          pkg-config --version
+          echo "=== LuaJIT package ==="
+          pacman -Q | grep -i luajit || true
 
-          Write-Host "=== luajit pkg-config ==="
+          echo "=== pkg-config ==="
           pkg-config --modversion luajit
           pkg-config --cflags luajit
           pkg-config --libs luajit
         
       - name: Build mpv from source
         shell: pwsh
-        env:
-          PKG_CONFIG_PATH: C:\msys64\${{ matrix.msystem }}\lib\pkgconfig;C:\msys64\${{ matrix.msystem }}\share\pkgconfig
-          PATH: C:\msys64\${{ matrix.msystem }}\bin;${{ env.PATH }}
         run: |
           dev\windows\build_mpv_source.ps1 -Arch ${{ matrix.arch }} -Force
 
