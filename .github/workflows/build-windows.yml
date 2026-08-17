@@ -61,21 +61,22 @@ jobs:
             ${{ matrix.pkg_prefix }}-shaderc
             ${{ matrix.pkg_prefix }}-spirv-cross
             ${{ matrix.pkg_prefix }}-llvm
-      
-      - name: Export MSYS2 LuaJIT paths
-        shell: msys2 {0}
+              
+      - name: Install LuaJIT into build MSYS2
+        shell: pwsh
         run: |
-          echo "=== LuaJIT check ==="
-          pkg-config --modversion luajit
-          pkg-config --variable=pcfiledir luajit
-          echo "PKG_CONFIG_PATH=$MINGW_PREFIX/lib/pkgconfig:$MINGW_PREFIX/share/pkgconfig" >> "$GITHUB_ENV"
-          echo "$MINGW_PREFIX/bin" >> "$GITHUB_PATH"
-        
+          Write-Host "Installing LuaJIT into C:\msys64..."
+          C:\msys64\usr\bin\bash.exe -lc "pacman -S --noconfirm --needed ${{ matrix.pkg_prefix }}-luajit"
+
+          Write-Host "Checking LuaJIT files..."
+          Get-ChildItem "C:\msys64\${{ matrix.msystem }}\lib\pkgconfig" -Filter "*lua*" -ErrorAction Continue
+
+          Write-Host "Checking LuaJIT with build pkg-config..."
+          C:\msys64\${{ matrix.msystem }}\bin\pkg-config.exe --modversion luajit
+
       - name: Build mpv from source
         shell: pwsh
         run: |
-          Write-Host "PKG_CONFIG_PATH=$env:PKG_CONFIG_PATH"
-          pkg-config --modversion luajit
           dev\windows\build_mpv_source.ps1 -Arch ${{ matrix.arch }} -Force
 
       - name: Build and package
