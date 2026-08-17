@@ -106,6 +106,7 @@ pacman -S --needed --noconfirm \
     $PkgPrefix-cc \
     $PkgPrefix-meson \
     $PkgPrefix-pkgconf \
+    $PkgPrefix-luajit \
     $PkgPrefix-ffmpeg \
     $PkgPrefix-libplacebo \
     $PkgPrefix-libass \
