@@ -173,6 +173,8 @@ fn apply_boot_options(handle: &Handle, boot: &JfnMpvBoot) -> crate::error::Resul
     // libmpv defaults config=no (opposite of the mpv CLI); enable it so
     // users' $MPV_HOME/mpv.conf is loaded.
     set("config", "yes")?;
+    set("load-scripts", "no")?;
+
     // We only feed mpv direct media URLs from the Jellyfin server; the
     // youtube-dl/yt-dlp hook would just add startup latency.
     set("ytdl", "no")?;
