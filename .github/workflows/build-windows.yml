@@ -62,23 +62,20 @@ jobs:
             ${{ matrix.pkg_prefix }}-spirv-cross
             ${{ matrix.pkg_prefix }}-llvm
       
-      - name: Verify LuaJIT
+      - name: Export MSYS2 LuaJIT paths
         shell: msys2 {0}
         run: |
-          echo "=== MSYSTEM ==="
-          echo "$MSYSTEM"
-
-          echo "=== LuaJIT package ==="
-          pacman -Q | grep -i luajit || true
-
-          echo "=== pkg-config ==="
+          echo "=== LuaJIT check ==="
           pkg-config --modversion luajit
-          pkg-config --cflags luajit
-          pkg-config --libs luajit
+          pkg-config --variable=pcfiledir luajit
+          echo "PKG_CONFIG_PATH=$MINGW_PREFIX/lib/pkgconfig:$MINGW_PREFIX/share/pkgconfig" >> "$GITHUB_ENV"
+          echo "$MINGW_PREFIX/bin" >> "$GITHUB_PATH"
         
       - name: Build mpv from source
         shell: pwsh
         run: |
+          Write-Host "PKG_CONFIG_PATH=$env:PKG_CONFIG_PATH"
+          pkg-config --modversion luajit
           dev\windows\build_mpv_source.ps1 -Arch ${{ matrix.arch }} -Force
 
       - name: Build and package
