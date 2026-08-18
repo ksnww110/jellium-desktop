@@ -78,7 +78,7 @@ fn forward_lua_key(e: &KeyEvent) -> bool {
         
         // Ctrl+Z / Cmd+Z：转发给另一个 mpv Lua 脚本
         code if code == b'Z' as i32 && action_down => {
-            mpv_keypress("Ctrl+z");
+            mpv_cmd(&["script-binding", "font_menu/toggle"]);
             true
         }
 
