@@ -68,59 +68,58 @@ fn forward_lua_key(e: &KeyEvent) -> bool {
     let action_down = (e.modifiers & action_modifier()) != 0;
 
     match e.windows_key_code {
-        // Ctrl+T / Cmd+T：直接调用你的 Lua 脚本消息，比模拟按键更稳。
-        // 你的脚本已有：
-        // mp.register_script_message("video-tone-adjuster-toggle", toggle)
         code if code == b'T' as i32 && action_down => {
             mpv_script_message("video-tone-adjuster-toggle");
             true
         }
-        
-        // Ctrl+Z / Cmd+Z：转发给另一个 mpv Lua 脚本
+    
         code if code == b'Z' as i32 && action_down => {
             mpv_cmd(&["script-binding", "font_menu/toggle"]);
             true
         }
-
-        // 你的脚本打开面板后会临时绑定 ESC / r / R。
-        // 所以这里转发 keypress 即可。
-        0x1B => {
-            mpv_keypress("ESC");
+    
+        0x26 => {
+            mpv_cmd(&["script-binding", "font_menu/font-menu-up"]);
             true
         }
-
+    
+        0x28 => {
+            mpv_cmd(&["script-binding", "font_menu/font-menu-down"]);
+            true
+        }
+    
+        0x0D => {
+            mpv_cmd(&["script-binding", "font_menu/font-menu-enter"]);
+            true
+        }
+    
+        0x08 => {
+            mpv_cmd(&["script-binding", "font_menu/font-menu-backspace"]);
+            true
+        }
+    
+        0x1B => {
+            mpv_cmd(&["script-binding", "font_menu/font-menu-esc"]);
+            true
+        }
+    
         code if code == b'R' as i32 => {
             mpv_keypress("r");
             true
         }
-
-        // 下面这些是预留给你以后如果脚本支持方向键/回车时使用。
-        // 你现在的 video_tone_adjuster.lua 暂时没有绑定方向键，
-        // 所以这些转发目前不会产生实际动作。
+    
         0x25 => {
             mpv_keypress("LEFT");
             true
         }
-        0x26 => {
-            mpv_keypress("UP");
-            true
-        }
+    
         0x27 => {
             mpv_keypress("RIGHT");
             true
         }
-        0x28 => {
-            mpv_keypress("DOWN");
-            true
-        }
-        0x0D => {
-            mpv_keypress("ENTER");
-            true
-        }
-
+    
         _ => false,
     }
-}
 
 wrap_keyboard_handler! {
     pub struct JfnKeyboardHandlerBuilder {
