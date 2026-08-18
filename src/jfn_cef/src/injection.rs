@@ -49,6 +49,7 @@ pub(crate) enum NativeFunction {
     ThemeColor,
     SetOsdVisible,
     ToggleFullscreen,
+    MpvMouse,
     GetSavedServerUrl,
     NavigateMain,
     DismissOverlay,
@@ -97,6 +98,7 @@ impl NativeFunction {
             "themeColor" => Self::ThemeColor,
             "setOsdVisible" => Self::SetOsdVisible,
             "toggleFullscreen" => Self::ToggleFullscreen,
+            "mpvMouse" => Self::MpvMouse,
             "getSavedServerUrl" => Self::GetSavedServerUrl,
             "navigateMain" => Self::NavigateMain,
             "dismissOverlay" => Self::DismissOverlay,
@@ -146,6 +148,7 @@ impl NativeFunction {
             Self::ThemeColor => "themeColor",
             Self::SetOsdVisible => "setOsdVisible",
             Self::ToggleFullscreen => "toggleFullscreen",
+            Self::MpvMouse => "mpvMouse",
             Self::GetSavedServerUrl => "getSavedServerUrl",
             Self::NavigateMain => "navigateMain",
             Self::DismissOverlay => "dismissOverlay",
@@ -241,6 +244,7 @@ const WEB_FUNCTIONS: &[NativeFunction] = &[
     NativeFunction::ThemeColor,
     NativeFunction::SetOsdVisible,
     NativeFunction::ToggleFullscreen,
+    NativeFunction::MpvMouse,
 ];
 
 const WEB_SCRIPTS: &[InjectedScript] = &[
