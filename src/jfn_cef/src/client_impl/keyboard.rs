@@ -75,6 +75,12 @@ fn forward_lua_key(e: &KeyEvent) -> bool {
             mpv_script_message("video-tone-adjuster-toggle");
             true
         }
+        
+        // Ctrl+Z / Cmd+Z：转发给另一个 mpv Lua 脚本
+        code if code == b'Z' as i32 && action_down => {
+            mpv_keypress("Ctrl+z");
+            true
+        }
 
         // 你的脚本打开面板后会临时绑定 ESC / r / R。
         // 所以这里转发 keypress 即可。
