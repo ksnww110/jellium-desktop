@@ -61,7 +61,6 @@ jobs:
             mpv-windows-x64-
 
       - name: Build mpv from source
-        if: steps.cache-mpv.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
           dev\windows\build_mpv_source.ps1 -Arch x64 -Force
