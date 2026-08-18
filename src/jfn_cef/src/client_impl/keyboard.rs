@@ -1,5 +1,6 @@
 use cef::*;
-use std::os::raw::c_int;
+use std::ffi::CString;
+use std::os::raw::{c_char, c_int};
 use std::sync::Arc;
 
 use crate::client::Inner;
@@ -12,9 +13,13 @@ fn action_modifier() -> u32 {
         .unwrap_or(EVENTFLAG_CONTROL_DOWN)
 }
 
-fn is_paste_shortcut(e: &KeyEvent) -> bool {
+fn is_raw_key_down(e: &KeyEvent) -> bool {
     let kt: sys::cef_key_event_type_t = e.type_.into();
-    if kt != sys::cef_key_event_type_t::KEYEVENT_RAWKEYDOWN {
+    kt == sys::cef_key_event_type_t::KEYEVENT_RAWKEYDOWN
+}
+
+fn is_paste_shortcut(e: &KeyEvent) -> bool {
+    if !is_raw_key_down(e) {
         return false;
     }
     if (e.modifiers & action_modifier()) == 0 {
@@ -24,6 +29,91 @@ fn is_paste_shortcut(e: &KeyEvent) -> bool {
         return false;
     }
     e.windows_key_code == b'V' as i32
+}
+
+fn mpv_cmd(args: &[&str]) {
+    let storage = args
+        .iter()
+        .map(|s| CString::new(*s))
+        .collect::<Result<Vec<_>, _>>();
+
+    let Ok(storage) = storage else {
+        return;
+    };
+
+    let ptrs: Vec<*const c_char> = storage.iter().map(|s| s.as_ptr()).collect();
+
+    unsafe {
+        jfn_mpv::api::jfn_mpv_command_async(ptrs.as_ptr(), ptrs.len());
+    }
+}
+
+fn mpv_keypress(key: &str) {
+    mpv_cmd(&["keypress", key]);
+}
+
+fn mpv_script_message(name: &str) {
+    mpv_cmd(&["script-message", name]);
+}
+
+fn forward_lua_key(e: &KeyEvent) -> bool {
+    if !is_raw_key_down(e) {
+        return false;
+    }
+
+    if (e.modifiers & EVENTFLAG_ALT_DOWN) != 0 {
+        return false;
+    }
+
+    let action_down = (e.modifiers & action_modifier()) != 0;
+
+    match e.windows_key_code {
+        // Ctrl+T / Cmd+T：直接调用你的 Lua 脚本消息，比模拟按键更稳。
+        // 你的脚本已有：
+        // mp.register_script_message("video-tone-adjuster-toggle", toggle)
+        code if code == b'T' as i32 && action_down => {
+            mpv_script_message("video-tone-adjuster-toggle");
+            true
+        }
+
+        // 你的脚本打开面板后会临时绑定 ESC / r / R。
+        // 所以这里转发 keypress 即可。
+        0x1B => {
+            mpv_keypress("ESC");
+            true
+        }
+
+        code if code == b'R' as i32 => {
+            mpv_keypress("r");
+            true
+        }
+
+        // 下面这些是预留给你以后如果脚本支持方向键/回车时使用。
+        // 你现在的 video_tone_adjuster.lua 暂时没有绑定方向键，
+        // 所以这些转发目前不会产生实际动作。
+        0x25 => {
+            mpv_keypress("LEFT");
+            true
+        }
+        0x26 => {
+            mpv_keypress("UP");
+            true
+        }
+        0x27 => {
+            mpv_keypress("RIGHT");
+            true
+        }
+        0x28 => {
+            mpv_keypress("DOWN");
+            true
+        }
+        0x0D => {
+            mpv_keypress("ENTER");
+            true
+        }
+
+        _ => false,
+    }
 }
 
 wrap_keyboard_handler! {
@@ -40,10 +130,18 @@ wrap_keyboard_handler! {
             _is_keyboard_shortcut: Option<&mut c_int>,
         ) -> c_int {
             let Some(e) = event else { return 0 };
-            if !is_paste_shortcut(e) {
-                return 0;
+
+            // 保留原项目的粘贴逻辑。
+            if is_paste_shortcut(e) {
+                return if self.inner.try_paste() { 1 } else { 0 };
             }
-            if self.inner.try_paste() { 1 } else { 0 }
+
+            // 新增：把指定按键转发给 mpv/Lua。
+            if forward_lua_key(e) {
+                return 1;
+            }
+
+            0
         }
     }
 }
