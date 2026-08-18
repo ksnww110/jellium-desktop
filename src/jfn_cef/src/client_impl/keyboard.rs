@@ -68,58 +68,70 @@ fn forward_lua_key(e: &KeyEvent) -> bool {
     let action_down = (e.modifiers & action_modifier()) != 0;
 
     match e.windows_key_code {
+        // Ctrl+T：画面调节脚本
         code if code == b'T' as i32 && action_down => {
             mpv_script_message("video-tone-adjuster-toggle");
             true
         }
-    
+
+        // Ctrl+Z：字体菜单
         code if code == b'Z' as i32 && action_down => {
             mpv_cmd(&["script-binding", "font_menu/toggle"]);
             true
         }
-    
-        0x26 => {
-            mpv_cmd(&["script-binding", "font_menu/font-menu-up"]);
-            true
-        }
-    
-        0x28 => {
-            mpv_cmd(&["script-binding", "font_menu/font-menu-down"]);
-            true
-        }
-    
-        0x0D => {
-            mpv_cmd(&["script-binding", "font_menu/font-menu-enter"]);
-            true
-        }
-    
-        0x08 => {
-            mpv_cmd(&["script-binding", "font_menu/font-menu-backspace"]);
-            true
-        }
-    
+
+        // ESC
         0x1B => {
             mpv_cmd(&["script-binding", "font_menu/font-menu-esc"]);
             true
         }
-    
+
+        // ↑
+        0x26 => {
+            mpv_cmd(&["script-binding", "font_menu/font-menu-up"]);
+            true
+        }
+
+        // ↓
+        0x28 => {
+            mpv_cmd(&["script-binding", "font_menu/font-menu-down"]);
+            true
+        }
+
+        // Enter
+        0x0D => {
+            mpv_cmd(&["script-binding", "font_menu/font-menu-enter"]);
+            true
+        }
+
+        // Backspace
+        0x08 => {
+            mpv_cmd(&["script-binding", "font_menu/font-menu-backspace"]);
+            true
+        }
+
+        // R：仍然保留给 tone 脚本
         code if code == b'R' as i32 => {
             mpv_keypress("r");
             true
         }
-    
+
+        // ←
         0x25 => {
             mpv_keypress("LEFT");
             true
         }
-    
+
+        // →
         0x27 => {
             mpv_keypress("RIGHT");
             true
         }
-    
+
         _ => false,
     }
+}
+
 
 wrap_keyboard_handler! {
     pub struct JfnKeyboardHandlerBuilder {
