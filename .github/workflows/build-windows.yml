@@ -2,12 +2,6 @@ name: build-windows
 
 on:
   workflow_dispatch:
-  pull_request:
-  push:
-    branches:
-      - main
-    tags:
-      - 'v*'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,23 +9,14 @@ concurrency:
 
 jobs:
   build:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - arch: x64
-            runner: windows-latest
-            platform: windows64
-            msystem: CLANG64
-            pkg_prefix: mingw-w64-clang-x86_64
-            triple: x86_64-pc-windows-msvc
-          - arch: arm64
-            runner: windows-11-arm
-            platform: windowsarm64
-            msystem: CLANGARM64
-            pkg_prefix: mingw-w64-clang-aarch64
-            triple: aarch64-pc-windows-msvc
-    runs-on: ${{ matrix.runner }}
+    runs-on: windows-latest
+
+    env:
+      ARCH: x64
+      PLATFORM: windows64
+      MSYSTEM: CLANG64
+      PKG_PREFIX: mingw-w64-clang-x86_64
+      TRIPLE: x86_64-pc-windows-msvc
 
     steps:
       - name: Checkout
@@ -39,48 +24,67 @@ jobs:
         with:
           submodules: recursive
 
-      - uses: ./.github/actions/setup-cef
+      - name: Setup CEF
+        uses: ./.github/actions/setup-cef
         with:
-          platform: ${{ github.workflow }}-${{ matrix.arch }}
+          platform: ${{ github.workflow }}-x64
 
       - name: Setup MSYS2
         uses: msys2/setup-msys2@v2
         with:
-          msystem: ${{ matrix.msystem }}
+          msystem: CLANG64
           install: >-
-            ${{ matrix.pkg_prefix }}-cc
-            ${{ matrix.pkg_prefix }}-clang
-            ${{ matrix.pkg_prefix }}-meson
-            ${{ matrix.pkg_prefix }}-pkgconf
-            ${{ matrix.pkg_prefix }}-ffmpeg
-            ${{ matrix.pkg_prefix }}-libplacebo
-            ${{ matrix.pkg_prefix }}-libass
-            ${{ matrix.pkg_prefix }}-vulkan-headers
-            ${{ matrix.pkg_prefix }}-vulkan-loader
-            ${{ matrix.pkg_prefix }}-shaderc
-            ${{ matrix.pkg_prefix }}-spirv-cross
-            ${{ matrix.pkg_prefix }}-llvm
+            mingw-w64-clang-x86_64-cc
+            mingw-w64-clang-x86_64-clang
+            mingw-w64-clang-x86_64-meson
+            mingw-w64-clang-x86_64-pkgconf
+            mingw-w64-clang-x86_64-ffmpeg
+            mingw-w64-clang-x86_64-libplacebo
+            mingw-w64-clang-x86_64-libass
+            mingw-w64-clang-x86_64-vulkan-headers
+            mingw-w64-clang-x86_64-vulkan-loader
+            mingw-w64-clang-x86_64-shaderc
+            mingw-w64-clang-x86_64-spirv-cross
+            mingw-w64-clang-x86_64-llvm
+
+      # -------------------------
+      # Cache mpv build/install
+      # -------------------------
+      - name: Cache mpv
+        id: cache-mpv
+        uses: actions/cache@v4
+        with:
+          path: |
+            third_party/mpv-install
+          key: mpv-windows-x64-${{ hashFiles('dev/windows/build_mpv_source.ps1') }}
+          restore-keys: |
+            mpv-windows-x64-
 
       - name: Build mpv from source
+        if: steps.cache-mpv.outputs.cache-hit != 'true'
         shell: pwsh
         run: |
-          dev\windows\build_mpv_source.ps1 -Arch ${{ matrix.arch }} -Force
+          dev\windows\build_mpv_source.ps1 -Arch x64 -Force
 
+      # -------------------------
+      # Rust / Cargo cache
+      # -------------------------
+      - name: Cache Rust
+        uses: Swatinem/rust-cache@v2
+        with:
+          shared-key: windows-x64
+          cache-on-failure: true
+
+      # -------------------------
+      # Build Jellium
+      # -------------------------
       - name: Build and package
         shell: cmd
         env:
-          # bindgen (used by jfn-mpv's build.rs) dlopens libclang at
-          # build time. The mingw-w64-clang-*-llvm package ships
-          # libclang.dll under the msystem prefix's bin/; cmd.exe
-          # doesn't pick that up from setup-msys2, so point bindgen
-          # at it explicitly.
-          LIBCLANG_PATH: C:\msys64\${{ matrix.msystem }}\bin
-          MSYS_BIN: C:\msys64\${{ matrix.msystem }}\bin
-          # mingw's libclang doesn't auto-pick the MSVC target triple, so
-          # MSVC's arch-specific headers (__int64, vcruntime intrinsics,
-          # etc.) get parsed against the wrong default target. Pin it.
-          BINDGEN_EXTRA_CLANG_ARGS: --target=${{ matrix.triple }}
-          MATRIX_ARCH: ${{ matrix.arch }}
+          LIBCLANG_PATH: C:\msys64\CLANG64\bin
+          MSYS_BIN: C:\msys64\CLANG64\bin
+          BINDGEN_EXTRA_CLANG_ARGS: --target=x86_64-pc-windows-msvc
+          MATRIX_ARCH: x64
         run: |
           for /f "usebackq delims=" %%i in (`"%ProgramFiles(x86)%\Microsoft Visual Studio\Installer\vswhere.exe" -latest -property installationPath`) do set "VSINSTALL=%%i"
           call "%VSINSTALL%\VC\Auxiliary\Build\vcvarsall.bat" %MATRIX_ARCH% || exit /b 1
@@ -90,5 +94,6 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-artifact@v7
         with:
-          name: windows-${{ matrix.arch }}
+          name: windows-x64
           path: dist/JelliumDesktop-*.zip
+          if-no-files-found: error
