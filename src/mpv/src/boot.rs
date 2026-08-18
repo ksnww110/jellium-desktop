@@ -128,15 +128,16 @@ fn apply_defaults(
     // by language / default-flag / codec scoring.
     set("track-auto-selection", "no")?;
 
-    // Input: we own all devices and route through CEF.
+    // Input: keep mpv default playback bindings disabled,
+    // but allow Lua scripts and forced key bindings to receive keyboard/mouse events.
     set("input-default-bindings", "no")?;
-    set("input-vo-keyboard", "no")?;
-    set("input-cursor", "no")?;
-    set("cursor-autohide", "no")?;
-
+    set("input-vo-keyboard", "yes")?;
+    set("input-cursor", "yes")?;
+    set("cursor-autohide", "yes")?;
+    
     if display == DisplayBackend::Other {
-        set("input-vo-cursor", "no")?;
-        set("input-keyboard", "no")?;
+        set("input-vo-cursor", "yes")?;
+        set("input-keyboard", "yes")?;
     }
 
     // Disable mpv's clipboard so it keeps a single wl_display connection.
