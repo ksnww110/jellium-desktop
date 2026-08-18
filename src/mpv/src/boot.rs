@@ -133,11 +133,11 @@ fn apply_defaults(
     set("input-default-bindings", "no")?;
     set("input-vo-keyboard", "yes")?;
     set("input-cursor", "yes")?;
-    set("cursor-autohide", "yes")?;
+    set("cursor-autohide", "no")?;
     
     if display == DisplayBackend::Other {
-        set("input-vo-cursor", "yes")?;
-        set("input-keyboard", "yes")?;
+        set("input-vo-cursor", "no")?;
+        set("input-keyboard", "no")?;
     }
 
     // Disable mpv's clipboard so it keeps a single wl_display connection.
